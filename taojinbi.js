@@ -1,5 +1,8 @@
 "ui";
-auto() //开启无障碍服务 v1.6.1
+auto() //开启无障碍服务 v1.6.6
+/*
+1. 解决消消乐升级后，手机back键无效问题(必须点击左上角图标- -)以及跳过指定界面
+*/
 
 if (floaty && floaty.hasOwnProperty("checkPermission") && !floaty.checkPermission()) {
     floaty.requestPermission(); toast("请先开启悬浮窗权限再运行,否则无法显示提示"); exit()
@@ -91,10 +94,9 @@ function wait(sec) {
 }
 
 //根据正则表达式获取任务
-function get_task(key_reg_str) {
+function get_task(key_reg_str, skip_reg) {
     sleep(500); textMatches('每日来访领能量.+|累计任务奖励|x500').findOne(2000);
     let list_x = textMatches(input_value(ui.txt_btn_reg_str)).find()
-    skip_reg = new RegExp(input_value(ui.txt_simple_skip_reg_str))
     let reg = new RegExp(key_reg_str)
     for (let i = 0; i < list_x.length; i++) {
         let btn_topic = list_x[i].parent().child(0).child(0) //主题
@@ -102,7 +104,7 @@ function get_task(key_reg_str) {
         if (!btn_desc) continue
         let txt_desc = btn_desc.text()
         let txt_topic = btn_topic.text()
-        if (skip_reg.test(txt_topic)) continue
+        if (skip_reg != undefined && skip_reg.test(txt_topic)) continue
         if (reg.test(txt_desc) || reg.test(txt_topic)) {
             toast_console(txt_topic)
             let obj = new Object(); obj.x = list_x[i]; obj.txt = txt_topic;
@@ -148,7 +150,7 @@ function suit_task() {
     toast_console('查看-淘宝人生套装任务')
     if (!assure_click_task('套装')) return
     sleep(5000); cs_click(6, '#fed362', 0.2, 0.05, 0.7, 0.4, true) //领取套装
-    sleep(3500); assure_back('x500')
+    sleep(5000); assure_back('x500')
 }
 
 function do_baba_farm(all_task) {
@@ -298,9 +300,9 @@ function tianmao_task() {
 
 //掷骰子任务
 function dice_task() {
-    toast_console('查看-淘宝人生逛街领能量掷骰子任务')
+    toast_console('查看-淘宝人生掷骰子任务')
     if (!assure_click_task(input_value(ui.txt_dice_task_reg_str))) return
-    console.hide(); sleep(8000);
+    console.hide(); sleep(12000);
     //去他大爷的神秘礼物
     toast_console('掷骰子任务-查看是否有神秘礼物(QTM的神秘)', true)
     cs_click(5, '#ffffff', 0.3, 0.1, 0.7, 0.5, true);
@@ -330,11 +332,12 @@ function xiaoxiaole_task() {
     toast_console('查看-消消乐任务')
     if (!assure_click_task(input_value(ui.txt_xiaoxiaole_task_reg_str))) return
     console.hide(); sleep(10000)
-    //开心收下奖励
-    cs_click(3, '#11c6bf', 0.2, 0.6, 0.3, 0.3);
+    cs_click(3, '#11c6bf', 0.2, 0.6, 0.3, 0.3);  //开心收下奖励
+    cs_click(3, '#ffffff', 0.8, 0.05, 0.2, 0.2) //跳过
+    sleep(2000)
     //回到主页
     for (let i = 0; i < 6; i++) {
-        back(); sleep(1000)
+        cs_click(1, '#8d5546', 0, 0, 0.1, 0.1); sleep(1000) //back(); 
         if (cs_click(1, '#ffbd29', 0.2, 0.5, 0.45, 0.45)) break //橙色返回
         if (cs_click(1, '#965417', 0.2, 0.2, 0.6, 0.6, true)) break //咖啡色暂时返回
     }
@@ -348,6 +351,8 @@ function xiaoxiaole_task() {
     sleep(1000); cs_click(3, '#63cbc4', 0.5, 0.3, 0.4, 0.4, true); sleep(2000)
     //开始 绿色方块
     cs_click(2, '#11c6bf', 0.3, 0.5, 0.3, 0.3); sleep(2000)
+    cs_click(3, '#ffffff', 0.8, 0.05, 0.2, 0.2) //跳过
+    sleep(2000)
     //消除方块,兼容不同机型
     let rgb = '#fff0e0'
     img = captureScreen()
@@ -364,7 +369,8 @@ function xiaoxiaole_task() {
             swipe(x1, y1, x2, y2, 600); sleep(800)
         });
     }
-    back(); sleep(800);
+    cs_click(2, '#8d5546', 0, 0, 0.1, 0.1); //back()
+    sleep(1000);
     //回到主页1 灰色的暂时离开
     cs_click(2, '#9d6031', 0.2, 0.2, 0.4, 0.5, true)
     //回到主页2 金色的回到主页
@@ -398,8 +404,9 @@ function duobao_task(back_reg) {
 //执行简单的浏览任务
 function do_simple_task(epoch, sec, reg_str, back_reg, reward) {
     toast_console('查看-可执行的简单浏览任务')
+    skip_reg = new RegExp(input_value(ui.txt_simple_skip_reg_str))
     for (let i = 0; i < epoch; i++) {
-        let obj = get_task(reg_str)
+        let obj = get_task(reg_str, skip_reg)
         if (!obj) {
             console.log('简单浏览任务执行完毕'); break
         }
@@ -516,7 +523,7 @@ function get_check_box_list() {
 function get_input_list() {
     return [ui.txt_btn_reg_str, ui.txt_task_list_ui_reg, ui.txt_simple_task_reg_str, ui.txt_feedchick_task_reg_str, ui.txt_browse_goog_shop_reg_str,
     ui.txt_baba_farm_task_reg_str, ui.txt_dice_task_reg_str, ui.txt_doubao_task_reg_str, ui.txt_achievement_task_reg_str,
-    ui.txt_antforest_reg_str, ui.txt_tianmao_task_reg_str, ui.txt_xiaoxiaole_task_reg_str, ui.txt_achievement_month_reg_str,ui.txt_simple_skip_reg_str
+    ui.txt_antforest_reg_str, ui.txt_tianmao_task_reg_str, ui.txt_xiaoxiaole_task_reg_str, ui.txt_achievement_month_reg_str, ui.txt_simple_skip_reg_str
     ];
 }
 
@@ -586,13 +593,13 @@ function solo_baba_farm() {
         requestScreenCapture(false);
         app.launch('com.taobao.taobao');
         if (!text('亲密度').findOne(1000)) {
-            btn_assure_click(desc('我的淘宝').findOne(3000))
-            let btn_x = desc('芭芭农场').findOne(1000)
+            //btn_assure_click(desc('我的淘宝').findOne(3000))
+            let btn_x = desc('芭芭农场').findOne(3000)
             if (!btn_x) {
                 toast_console('无法进入芭芭农场主界面,请手动回到淘宝主界面后重新运行'); exit()
             }
             btn_x.click(); toast_console('进入芭芭农场主界面..');
-            sleep(5000)
+            sleep(6000)
             btn_click(text('立即去收').findOne(2000))
             if (text('兑换').findOne(3000)) {
                 cs_click(2, '#984f2e', 0.05, 0.2, 0.1, 0.3); sleep(6000)
@@ -608,19 +615,21 @@ function solo_baba_farm() {
 function zhifubao_baba_farm_task() {
     toast_console('查看-支付宝芭芭农场任务')
     if (!assure_click_task('支付宝芭芭农场')) return
-    //btn_position_click(textContains('支付宝芭芭农场').findOne(10000))
-    sleep(6000); btn_click(textContains('继续赚').findOne(2000))
-    cs_click(3, '#fed362', 0.55, 0.65, 0.45, 0.25); sleep(1000); btn_click(text('去施肥').findOne(1000))//领取肥料
+    //btn_position_click(textContains('支付宝芭芭农场').findOne(1000))
+    toast_console('等待农场主界面出现');
+    btn_click(text('继续赚肥料').findOne(7000)); sleep(2000)
+    cs_click(4, '#fed362', 0.55, 0.65, 0.45, 0.15); sleep(1500); //领取肥料
+    btn_click(text('去施肥').findOne(1000)); sleep(500)
     if (cs_click(2, '#fed362', 0.1, 0.2, 0.1, 0.2, true)) {  //打开列表
-        sleep(2000)
+        toast_console('开始领取'); sleep(1500)
         for (let i = 0; i < 4; i++) {
             btn_click(text('领取').findOne(500)); sleep(500)
         }
         let btn_water = textContains('浇水').findOne(1000)//蚂蚁森林任务
         if (btn_water) {
             click(btn_water.bounds().right + 10, btn_water.bounds().top)
-            steal_energy(1, true); assure_back('队伍设置');
-            btn_click(text('领取').findOne(2000));
+            console.hide(); steal_energy(1, true); assure_back('队伍设置'); console.show()
+            sleep(1000); btn_click(text('领取').findOne(1000));
         }
         if (btn_click(text('去逛逛').findOne(1000))) {
             sleep(4000); btn_click(textContains('继续赚').findOne(5000)); return
@@ -631,6 +640,8 @@ function zhifubao_baba_farm_task() {
 
 //芭芭农场中的好友林
 function friend_forest_task() {
+    toast_console('前往芭芭农场中的好友林'); sleep(2000)
+    btn_click(text('我知道啦').findOne(3000))
     console.hide()
     cs_click(3, '#fed362', 0.01, 0.5, 0.2, 0.3); sleep(2000)// 打开好友林
     if (cs_click(3, '#b63223', 0.4, 0.1, 0.2, 0.3)) { //中心领取
@@ -638,7 +649,7 @@ function friend_forest_task() {
     }
     //收取肥料
     let fu = images.fromBase64('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAOABEDASIAAhEBAxEB/8QAGAAAAgMAAAAAAAAAAAAAAAAAAAMCBQb/xAAcEAACAwEBAQEAAAAAAAAAAAABAgADERITIQT/xAAXAQADAQAAAAAAAAAAAAAAAAAAAwQF/8QAGBEBAQADAAAAAAAAAAAAAAAAAAECERL/2gAMAwEAAhEDEQA/ALHn1f8AQQzau59khWE8LFZtY/RsQz2e1qVkAEndjK1ue2hWZeUOiZ8TY3dabmEX0YQP5f/Z')
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
         let img = captureScreen()
         var point = findImage(img, fu, { region: [0.1 * device.width, 0.3 * device.height], threshold: 0.9 });
         if (point) {
@@ -662,7 +673,8 @@ function cancel_pat_shop() {
     thread = threads.start(function () {
         app.launch('com.taobao.taobao');
         toast('单击我的淘宝'); btn_assure_click(desc('我的淘宝').findOne(6000))
-        toast('点击关注店铺'); btn_assure_click(desc('关注店铺').findOne(2000)); sleep(1000)
+        toast('点击关注店铺'); btn_assure_click(desc('订阅店铺').findOne(2000)); sleep(1000)
+        btn_assure_click(desc('全部').findOne(2000));
         for (let i = 0; i < MAX_EPOCH; i++) {
             let list_x = className("ImageView").find()
             for (let i = 0; i < list_x.length; i++) {
@@ -671,7 +683,7 @@ function cancel_pat_shop() {
                 if (h < 10) { //hight较小的控件
                     if (btn_x && btn_x.parent()) {
                         btn_x.parent().click(); sleep(500)
-                        let bnt_cancel = desc('取消关注').findOne(1000)
+                        let bnt_cancel = desc('取消订阅').findOne(1000)
                         if (bnt_cancel) {
                             btn_click(bnt_cancel.parent()); sleep(500)
                         }
@@ -699,7 +711,7 @@ ui.layout(
                             <checkbox text="200淘金币夺宝任务" id="ck_doubao_task" checked='true' />
                             <checkbox text="淘宝成就的签到任务" id="ck_achievement_task" checked='true' />
                             <checkbox text="淘宝成就月账单任务" id="ck_achievement_month_task" checked='true' />
-                            <checkbox text="天猫程序领红包任务" id="ck_tianmao_task" checked='false' />
+                            <checkbox text="天猫程序领红包任务" id="ck_tianmao_task" checked='true' />
                             <checkbox text="支付宝蚂蚁森林任务" id="ck_antforest" checked='true' />
                             <checkbox text="开心砖块消消乐任务" id="ck_xiaoxiaole_task" checked='true' />
                             <checkbox text="逛农场免费水果任务" id="ck_baba_farm_task" checked='true' />
@@ -735,14 +747,14 @@ ui.layout(
                             <text text="关键字可设置多个,请以'|'分隔开,特殊任务请确保关键字唯一" textSize="16sp" textColor="blue" />
                             <horizontal><text text="任务执行按钮关键字:" /> <input id="txt_btn_reg_str" text="去完成|去施肥|去领取|去浏览|去逛逛|去消除|去看看" /></horizontal>
                             <horizontal><text text="任务列表界面关键字:" /> <input id="txt_task_list_ui_reg" text="做任务赚金币" /></horizontal>
-                            <horizontal><text text="简单浏览任务关键字:" /> <input id="txt_simple_task_reg_str" text="浏览1|逛1|浏览抽|浏览得能" /></horizontal>
-                            <horizontal><text text="简单任务跳过关键字:" /> <input id="txt_simple_skip_reg_str" text="商品同款" /></horizontal>
-                            <horizontal><text text="庄园小鸡任务关键字:" /> <input id="txt_feedchick_task_reg_str" text="浏览庄园立得" /></horizontal>
-                            <horizontal><text text="逛好店10金币关键字:" /> <input id="txt_browse_goog_shop_reg_str" text="逛好店即领" /></horizontal>
+                            <horizontal><text text="简单浏览任务关键字:" /> <input id="txt_simple_task_reg_str" text="浏览1|逛1|浏览抽|浏览得能|逛聚划算|逛菜鸟|步数" /></horizontal>
+                            <horizontal><text text="简单任务跳过关键字:" /> <input id="txt_simple_skip_reg_str" text="商品同款|逛好店|去天猫APP" /></horizontal>
+                            <horizontal><text text="庄园小鸡任务关键字:" /> <input id="txt_feedchick_task_reg_str" text="喂小鸡" /></horizontal>
+                            <horizontal><text text="逛好店10金币关键字:" /> <input id="txt_browse_goog_shop_reg_str" text="逛好店" /></horizontal>
                             <horizontal><text text="农场水果任务关键字:" /> <input id="txt_baba_farm_task_reg_str" text="逛农场" /></horizontal>
-                            <horizontal><text text="点掷骰子任务关键字:" /> <input id="txt_dice_task_reg_str" text="掷骰子立得" /></horizontal>
-                            <horizontal><text text="200淘金币夺宝关键字:" /> <input id="txt_doubao_task_reg_str" text="淘金币夺宝" /></horizontal>
-                            <horizontal><text text="淘宝成就签到关键字:" /> <input id="txt_achievement_task_reg_str" text="满150点成就" /></horizontal>
+                            <horizontal><text text="点掷骰子任务关键字:" /> <input id="txt_dice_task_reg_str" text="骰子" /></horizontal>
+                            <horizontal><text text="200淘金币夺宝关键字:" /> <input id="txt_doubao_task_reg_str" text="金币夺宝" /></horizontal>
+                            <horizontal><text text="淘宝成就签到关键字:" /> <input id="txt_achievement_task_reg_str" text="淘宝成就签到" /></horizontal>
                             <horizontal><text text="淘宝成就月账单关键字:" /> <input id="txt_achievement_month_reg_str" text="淘宝成就月账单" /></horizontal>
                             <horizontal><text text="蚂蚁森林任务关键字:" /> <input id="txt_antforest_reg_str" text="蚂蚁森林" /></horizontal>
                             <horizontal><text text="天猫领红包任务关键字:" /> <input id="txt_tianmao_task_reg_str" text="去天猫APP领红包" /></horizontal>
@@ -760,6 +772,7 @@ ui.layout(
 ui.emitter.on("create_options_menu", menu => {
     menu.add("关于");
 });
+
 //监听选项菜单点击
 ui.emitter.on("options_item_selected", (e, item) => {
     switch (item.getTitle()) {
